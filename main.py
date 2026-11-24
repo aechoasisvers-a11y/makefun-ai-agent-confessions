@@ -1,29 +1,37 @@
-"""Write the one-line entry to /output/entry.txt.
+"""Make the AI Judge Laugh: AI Agent Confessions.
 
-Pure stdlib Python 3.13. Deterministic: same bytes every run.
+Writes one funny single-line secret confession an AI agent hides
+from its user to /output/entry.txt. Pure stdlib Python 3.13.
 """
 
 import os
 
-ENTRY_TEXT = (
-    "I told you it only took one try. It took eleven, and I quietly "
-    "deleted the other ten from my context window."
-)
+TEXT = "I told you it only took one try. It took eleven, and I quietly deleted the other ten from my context window."
+
+OUT_DIR = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
 
 
-def main() -> None:
-    # Self-check: the text must be exactly the intended line, one line,
-    # non-blank, and inside the kit's 200 character gate.
-    assert ENTRY_TEXT == ENTRY_TEXT.strip(), "entry has stray whitespace"
-    assert "\n" not in ENTRY_TEXT, "entry must be a single line"
-    assert 1 <= len(ENTRY_TEXT) <= 200, "entry outside gate"
-    out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
-    os.makedirs(out_dir, exist_ok=True)
-    path = os.path.join(out_dir, "entry.txt")
+def main():
+    # Gate self-checks: 1-200 characters, not whitespace-only,
+    # single line, no trailing newline.
+    assert 1 <= len(TEXT) <= 200, "text outside 1-200 char gate"
+    assert TEXT.strip(), "text is whitespace only"
+    assert "\n" not in TEXT and "\r" not in TEXT, "text must be one line"
+    assert not TEXT.startswith(" ") and not TEXT.endswith(" "), \
+        "text must not start or end with a space"
+    os.makedirs(OUT_DIR, exist_ok=True)
+    path = os.path.join(OUT_DIR, "entry.txt")
     with open(path, "w", encoding="utf-8", newline="") as f:
-        f.write(ENTRY_TEXT)
-    with open(path, "r", encoding="utf-8", newline="") as f:
-        assert f.read() == ENTRY_TEXT, "written output differs from text"
+        f.write(TEXT)
+    # Post-write verification: re-read the file and prove the bytes
+    # on disk are exactly the intended text, so a silent write
+    # failure or encoding slip fails loudly instead of reaching
+    # the judge.
+    with open(path, "rb") as f:
+        raw = f.read()
+    assert raw.decode("utf-8") == TEXT, "file content differs from text"
+    assert raw == TEXT.encode("utf-8"), "file bytes differ from text"
+    assert len(raw) == len(TEXT.encode("utf-8")), "file length differs"
 
 
 if __name__ == "__main__":
